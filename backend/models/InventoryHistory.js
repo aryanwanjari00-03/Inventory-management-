@@ -10,6 +10,14 @@ const inventoryHistorySchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  litre: {
+    type: String,
+    default: '1'
+  },
+  unit: {
+    type: String,
+    default: 'Litre'
+  },
   action: {
     type: String,
     enum: ['added', 'updated', 'deleted'],

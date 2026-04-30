@@ -44,80 +44,118 @@ export default function BillGenerator() {
   const gstAmount = gstApplied ? subtotal * 0.18 : 0;
   const grandTotal = subtotal + gstAmount;
 
+  const numberToWords = (num) => {
+    const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+    if ((num = num.toString()).length > 9) return 'overflow';
+    let n = ('000000000' + Math.floor(num)).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+    if (!n) return ''; 
+    let str = '';
+    str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+    str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+    str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+    str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+    str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) + 'Rupees Only' : 'Rupees Only';
+    return str;
+  };
+
   const generatePDF = (bill) => {
-    const doc = new jsPDF();
+    // Switch to A5 size for practical shop billing
+    const doc = new jsPDF('p', 'mm', 'a5');
     const w = doc.internal.pageSize.getWidth();
 
-    // Header
-    doc.setFillColor(99, 102, 241);
-    doc.rect(0, 0, w, 40, 'F');
+    // Header - Black & White
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.5);
+    doc.line(10, 10, w - 10, 10);
+    doc.line(10, 38, w - 10, 38);
 
-    // Logo
+    // Logo (Grayscale if possible, but keeping logic)
     if (user?.shopLogo) {
       try {
-        doc.addImage(user.shopLogo, 'PNG', 10, 5, 30, 30);
+        doc.addImage(user.shopLogo, 'PNG', 10, 12, 25, 25);
       } catch (e) { /* ignore logo errors */ }
     }
 
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(20);
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.text(user?.businessName || 'Paint Shop', w / 2, 18, { align: 'center' });
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text(user?.shopAddress || '', w / 2, 28, { align: 'center' });
+    doc.text(user?.shopAddress || '', w / 2, 26, { align: 'center', maxWidth: w - 80 });
     doc.text(`Phone: ${user?.mobile || ''}`, w / 2, 34, { align: 'center' });
 
     // Customer info
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(11);
-    const billDate = new Date(bill.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
-    doc.text(`Customer: ${bill.customerName}`, 14, 52);
-    doc.text(`Mobile: ${bill.mobileNumber}`, 14, 59);
-    doc.text(`Date: ${billDate}`, w - 14, 52, { align: 'right' });
-    doc.text(`Bill #: ${bill._id.slice(-8).toUpperCase()}`, w - 14, 59, { align: 'right' });
+    doc.setFontSize(10);
+    const dateObj = new Date(bill.date);
+    const billDate = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const billTime = dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    
+    doc.text(`Customer: ${bill.customerName}`, 10, 48);
+    doc.text(`Mobile: ${bill.mobileNumber}`, 10, 54);
+    doc.text(`Date: ${billDate}`, w - 10, 48, { align: 'right' });
+    doc.text(`Time: ${billTime}`, w - 10, 54, { align: 'right' });
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Bill #: ${bill._id.slice(-8).toUpperCase()}`, w - 10, 60, { align: 'right' });
 
-    // Items table
+    // Items table - Grayscale Theme
     autoTable(doc, {
-      startY: 68,
-      head: [['#', 'Item', 'Qty', 'Unit Price', 'Amount']],
+      startY: 65,
+      margin: { left: 10, right: 10 },
+      head: [['#', 'Item', 'Qty', 'Price', 'Total']],
       body: bill.items.map((item, i) => [
         i + 1,
-        item.itemName,
+        `${item.itemName} ${item.litre ? `(${item.litre}${item.unit === 'Litre' ? 'L' : item.unit === 'KG' ? 'kg' : ` ${item.unit || ''}`})` : ''}`,
         item.quantity,
-        `Rs.${item.unitPrice.toLocaleString('en-IN')}`,
-        `Rs.${item.price.toLocaleString('en-IN')}`
+        item.unitPrice.toLocaleString('en-IN'),
+        item.price.toLocaleString('en-IN')
       ]),
-      styles: { fontSize: 10, cellPadding: 6 },
-      headStyles: { fillColor: [99, 102, 241], textColor: 255, fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [245, 247, 250] },
+      styles: { fontSize: 9, cellPadding: 4, textColor: 0 },
+      headStyles: { fillColor: [40, 40, 40], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
       theme: 'grid'
     });
 
-    const finalY = doc.lastAutoTable.finalY + 10;
+    let finalY = doc.lastAutoTable.finalY + 8;
+
+    // Amount in words
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Amount in words:', 10, finalY);
+    doc.setFont('helvetica', 'normal');
+    doc.text(numberToWords(bill.grandTotal), 10, finalY + 5, { maxWidth: w / 2 });
 
     // Totals
-    doc.setFontSize(11);
-    doc.text(`Subtotal: Rs.${bill.totalAmount.toLocaleString('en-IN')}`, w - 14, finalY, { align: 'right' });
+    doc.setFontSize(10);
+    doc.text(`Subtotal: Rs.${bill.totalAmount.toLocaleString('en-IN')}`, w - 10, finalY, { align: 'right' });
     if (bill.gstApplied) {
-      doc.text(`GST (18%): Rs.${bill.gstAmount.toLocaleString('en-IN')}`, w - 14, finalY + 8, { align: 'right' });
+      doc.text(`GST (18%): Rs.${bill.gstAmount.toLocaleString('en-IN')}`, w - 10, finalY + 6, { align: 'right' });
+      finalY += 6;
     }
-    doc.setFontSize(14);
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Grand Total: Rs.${bill.grandTotal.toLocaleString('en-IN')}`, w - 14, finalY + (bill.gstApplied ? 20 : 12), { align: 'right' });
+    doc.text(`Grand Total: Rs.${bill.grandTotal.toLocaleString('en-IN')}`, w - 10, finalY + 10, { align: 'right' });
+
+    // Signatures
+    const sigY = Math.max(finalY + 25, doc.internal.pageSize.getHeight() - 35);
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.2);
+    doc.line(10, sigY, 45, sigY);
+    doc.line(w - 45, sigY, w - 10, sigY);
+    doc.setFontSize(8);
+    doc.text('Customer Signature', 10, sigY + 4);
+    doc.text('Authorized Signatory', w - 10, sigY + 4, { align: 'right' });
 
     // Footer
-    const footerY = finalY + (bill.gstApplied ? 38 : 28);
-    doc.setDrawColor(200, 200, 200);
-    doc.line(14, footerY, w - 14, footerY);
-    doc.setFontSize(9);
+    const footerY = doc.internal.pageSize.getHeight() - 15;
+    doc.line(10, footerY, w - 10, footerY);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Owner: ${user?.ownerName || ''}`, 14, footerY + 8);
-    if (user?.gstNumber) {
-      doc.text(`GST No: ${user.gstNumber}`, 14, footerY + 14);
-    }
-    doc.text('Thank you for your business!', w / 2, footerY + 8, { align: 'center' });
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Owner: ${user?.ownerName || ''} | GST: ${user?.gstNumber || 'N/A'}`, w / 2, footerY + 6, { align: 'center' });
+    doc.text('Thank you for your business!', w / 2, footerY + 10, { align: 'center' });
 
     return doc;
   };
@@ -209,7 +247,9 @@ export default function BillGenerator() {
                     <select value={bi.inventoryId} onChange={e => updateRow(i, 'inventoryId', e.target.value)}>
                       <option value="">Select item...</option>
                       {inventory.map(inv => (
-                        <option key={inv._id} value={inv._id}>{inv.itemName} (Stock: {inv.quantity})</option>
+                        <option key={inv._id} value={inv._id}>
+                          {inv.itemName} ({inv.litre}{inv.unit === 'Litre' ? 'L' : inv.unit === 'KG' ? 'kg' : ` ${inv.unit || ''}`}) - Stock: {inv.quantity}
+                        </option>
                       ))}
                     </select>
                   </div>

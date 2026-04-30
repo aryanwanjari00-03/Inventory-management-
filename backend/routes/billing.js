@@ -49,6 +49,8 @@ router.post('/', auth, async (req, res) => {
 
       billItems.push({
         itemName: inventoryItem.itemName,
+        litre: inventoryItem.litre,
+        unit: inventoryItem.unit,
         quantity: item.quantity,
         unitPrice: inventoryItem.unitPrice,
         price
@@ -65,6 +67,8 @@ router.post('/', auth, async (req, res) => {
       await new InventoryHistory({
         userId: req.user._id,
         itemName: inventoryItem.itemName,
+        litre: inventoryItem.litre,
+        unit: inventoryItem.unit,
         action: 'updated',
         oldQuantity: oldQuantity,
         newQuantity: inventoryItem.quantity,

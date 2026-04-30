@@ -11,6 +11,14 @@ const inventorySchema = new mongoose.Schema({
     required: [true, 'Item name is required'],
     trim: true
   },
+  litre: {
+    type: String,
+    default: '1'
+  },
+  unit: {
+    type: String,
+    default: 'Litre'
+  },
   quantity: {
     type: Number,
     required: [true, 'Quantity is required'],

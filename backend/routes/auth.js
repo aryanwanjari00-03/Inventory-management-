@@ -47,15 +47,35 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     // Find user
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid email or password' });
-    }
+    let user = await User.findOne({ email });
 
-    // Check password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid email or password' });
+    // Check if it's the admin from .env
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (email === adminEmail && password === adminPassword) {
+      if (!user) {
+        // Create admin user if it doesn't exist
+        user = new User({
+          businessName: 'Admin Business',
+          ownerName: 'Administrator',
+          email: adminEmail,
+          mobile: '0000000000',
+          password: adminPassword
+        });
+        await user.save();
+      }
+      // If user exists, we still allow login because passwords match the admin password
+    } else {
+      if (!user) {
+        return res.status(400).json({ message: 'Invalid email or password' });
+      }
+
+      // Check password
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Invalid email or password' });
+      }
     }
 
     // Generate token

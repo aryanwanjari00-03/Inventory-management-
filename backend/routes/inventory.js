@@ -18,17 +18,25 @@ router.get('/', auth, async (req, res) => {
 // Add inventory item
 router.post('/', auth, async (req, res) => {
   try {
-    const { itemName, quantity, unitPrice } = req.body;
+    const { itemName, quantity, unitPrice, litre, unit } = req.body;
 
-    // Check if item already exists for this user
-    const existing = await Inventory.findOne({ userId: req.user._id, itemName: { $regex: new RegExp(`^${itemName}$`, 'i') } });
+    // Check if item already exists for this user with same name and litre
+    const existing = await Inventory.findOne({ 
+      userId: req.user._id, 
+      itemName: { $regex: new RegExp(`^${itemName}$`, 'i') },
+      litre: litre || '1',
+      unit: unit || 'Litre'
+    });
+    
     if (existing) {
-      return res.status(400).json({ message: 'Item already exists. Use update instead.' });
+      return res.status(400).json({ message: 'Item with this litre size already exists. Use update instead.' });
     }
 
     const item = new Inventory({
       userId: req.user._id,
       itemName,
+      litre: litre || '1',
+      unit: unit || 'Litre',
       quantity,
       unitPrice
     });
@@ -38,6 +46,8 @@ router.post('/', auth, async (req, res) => {
     await new InventoryHistory({
       userId: req.user._id,
       itemName,
+      litre: litre || '1',
+      unit: unit || 'Litre',
       action: 'added',
       oldQuantity: 0,
       newQuantity: quantity,
@@ -53,7 +63,7 @@ router.post('/', auth, async (req, res) => {
 // Update inventory item
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { quantity, unitPrice } = req.body;
+    const { quantity, unitPrice, litre, unit } = req.body;
     const item = await Inventory.findOne({ _id: req.params.id, userId: req.user._id });
 
     if (!item) {
@@ -64,12 +74,16 @@ router.put('/:id', auth, async (req, res) => {
 
     if (quantity !== undefined) item.quantity = quantity;
     if (unitPrice !== undefined) item.unitPrice = unitPrice;
+    if (litre !== undefined) item.litre = litre;
+    if (unit !== undefined) item.unit = unit;
     await item.save();
 
     // Log history
     await new InventoryHistory({
       userId: req.user._id,
       itemName: item.itemName,
+      litre: item.litre,
+      unit: item.unit,
       action: 'updated',
       oldQuantity,
       newQuantity: item.quantity,
@@ -95,6 +109,8 @@ router.delete('/:id', auth, async (req, res) => {
     await new InventoryHistory({
       userId: req.user._id,
       itemName: item.itemName,
+      litre: item.litre,
+      unit: item.unit,
       action: 'deleted',
       oldQuantity: item.quantity,
       newQuantity: 0,

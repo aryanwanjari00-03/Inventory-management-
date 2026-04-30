@@ -8,7 +8,7 @@ export default function Inventory() {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [form, setForm] = useState({ itemName: '', quantity: '', unitPrice: '' });
+  const [form, setForm] = useState({ itemName: '', litre: '1', unit: 'Litre', quantity: '', unitPrice: '' });
 
   useEffect(() => { fetchItems(); }, []);
 
@@ -21,16 +21,22 @@ export default function Inventory() {
   };
 
   const resetForm = () => {
-    setForm({ itemName: '', quantity: '', unitPrice: '' });
+    setForm({ itemName: '', litre: '1', unit: 'Litre', quantity: '', unitPrice: '' });
     setShowAdd(false);
     setEditItem(null);
   };
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!form.itemName || !form.quantity || !form.unitPrice) return toast.error('Fill all fields');
+    if (!form.itemName || !form.quantity || !form.unitPrice || !form.litre) return toast.error('Fill all fields');
     try {
-      await api.post('/inventory', { itemName: form.itemName, quantity: Number(form.quantity), unitPrice: Number(form.unitPrice) });
+      await api.post('/inventory', { 
+        itemName: form.itemName, 
+        litre: form.litre,
+        unit: form.unit,
+        quantity: Number(form.quantity), 
+        unitPrice: Number(form.unitPrice) 
+      });
       toast.success('Item added!');
       resetForm();
       fetchItems();
@@ -39,9 +45,14 @@ export default function Inventory() {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
-    if (!form.quantity || !form.unitPrice) return toast.error('Fill all fields');
+    if (!form.quantity || !form.unitPrice || !form.litre) return toast.error('Fill all fields');
     try {
-      await api.put(`/inventory/${editItem._id}`, { quantity: Number(form.quantity), unitPrice: Number(form.unitPrice) });
+      await api.put(`/inventory/${editItem._id}`, { 
+        quantity: Number(form.quantity), 
+        unitPrice: Number(form.unitPrice),
+        litre: form.litre,
+        unit: form.unit
+      });
       toast.success('Item updated!');
       resetForm();
       fetchItems();
@@ -59,7 +70,13 @@ export default function Inventory() {
 
   const openEdit = (item) => {
     setEditItem(item);
-    setForm({ itemName: item.itemName, quantity: String(item.quantity), unitPrice: String(item.unitPrice) });
+    setForm({ 
+      itemName: item.itemName, 
+      litre: item.litre || '1',
+      unit: item.unit || 'Litre',
+      quantity: String(item.quantity), 
+      unitPrice: String(item.unitPrice) 
+    });
     setShowAdd(false);
   };
 
@@ -70,7 +87,7 @@ export default function Inventory() {
       <div className="page-header">
         <div>
           <h1>Inventory Management</h1>
-          <p>Add, update, and manage your paint stock</p>
+          <p>Manage paints, brushes, and other supplies</p>
         </div>
         <button className="btn btn-primary" onClick={() => { resetForm(); setShowAdd(true); }}>
           <HiPlus /> Add Item
@@ -86,18 +103,56 @@ export default function Inventory() {
                 <button className="btn-icon" onClick={resetForm}><HiX /></button>
               </div>
               <form onSubmit={editItem ? handleUpdate : handleAdd}>
-                <div className="form-group">
-                  <label>Item Name</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Asian Paints Royale 1L"
-                    value={form.itemName}
-                    onChange={e => setForm({ ...form, itemName: e.target.value })}
-                    disabled={!!editItem}
-                    style={editItem ? { opacity: 0.6 } : {}}
-                  />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+                  <div className="form-group">
+                    <label>Item Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Asian Paints Royale / Paint Brush"
+                      value={form.itemName}
+                      onChange={e => setForm({ ...form, itemName: e.target.value })}
+                      disabled={!!editItem}
+                      style={editItem ? { opacity: 0.6 } : {}}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Unit Type</label>
+                    <select 
+                      value={form.unit} 
+                      onChange={e => setForm({ ...form, unit: e.target.value })}
+                    >
+                      <option value="Litre">Litre (L)</option>
+                      <option value="KG">KG (kg)</option>
+                      <option value="Pieces">Pieces (pcs)</option>
+                      <option value="Packet">Packet</option>
+                      <option value="Box">Box</option>
+                      <option value="Roll">Roll</option>
+                      <option value="Set">Set</option>
+                    </select>
+                  </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                  <div className="form-group">
+                    <label>{form.unit === 'Litre' ? 'Litre (L)' : form.unit === 'KG' ? 'Weight (kg)' : 'Size/Spec'}</label>
+                    {form.unit === 'Litre' ? (
+                      <select 
+                        value={form.litre} 
+                        onChange={e => setForm({ ...form, litre: e.target.value })}
+                      >
+                        <option value="0.5">0.5 L</option>
+                        <option value="1">1 L</option>
+                        <option value="4">4 L</option>
+                        <option value="10">10 L</option>
+                        <option value="20">20 L</option>
+                      </select>
+                    ) : (
+                      <input 
+                        type="text" 
+                        placeholder={form.unit === 'KG' ? 'e.g. 5' : 'e.g. Standard'} 
+                        value={form.litre} 
+                        onChange={e => setForm({ ...form, litre: e.target.value })} 
+                      />
+                    )}
+                  </div>
                   <div className="form-group">
                     <label>Quantity</label>
                     <input type="number" placeholder="0" min="0" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} />
@@ -107,6 +162,7 @@ export default function Inventory() {
                     <input type="number" placeholder="0" min="0" value={form.unitPrice} onChange={e => setForm({ ...form, unitPrice: e.target.value })} />
                   </div>
                 </div>
+
                 <div className="form-group">
                   <label>Total Cost</label>
                   <input type="text" value={`₹${totalCost.toLocaleString('en-IN')}`} disabled style={{ opacity: 0.7, fontWeight: 600 }} />
@@ -130,10 +186,12 @@ export default function Inventory() {
           <div className="card slide-up">
             <div className="table-container">
               <table>
+
                 <thead>
                   <tr>
                     <th>#</th>
                     <th>Item Name</th>
+                    <th>Size/Unit</th>
                     <th>Qty</th>
                     <th>Unit Price</th>
                     <th>Total</th>
@@ -147,6 +205,9 @@ export default function Inventory() {
                     <tr key={item._id}>
                       <td>{idx + 1}</td>
                       <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{item.itemName}</td>
+                      <td>
+                        {item.unit === 'Litre' ? `${item.litre} L` : item.unit === 'KG' ? `${item.litre} kg` : `${item.litre} ${item.unit || ''}`}
+                      </td>
                       <td>{item.quantity}</td>
                       <td>₹{item.unitPrice.toLocaleString('en-IN')}</td>
                       <td style={{ fontWeight: 600 }}>₹{item.totalPrice.toLocaleString('en-IN')}</td>
