@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { HiOutlineViewGrid, HiOutlineCube, HiOutlineDocumentText, HiOutlineClock, HiOutlineCog, HiOutlineLogout, HiOutlineMenu, HiX } from 'react-icons/hi';
 import DotField from './DotField';
 
@@ -13,6 +14,7 @@ const navItems = [
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -20,6 +22,8 @@ export default function Layout() {
     logout();
     navigate('/login');
   };
+
+  const isDark = theme === 'dark';
 
   return (
     <div className="layout">
@@ -79,6 +83,11 @@ export default function Layout() {
             Logout
           </button>
         </div>
+
+        <div className="sidebar-branding">
+          <div className="dev-label">Developed By</div>
+          <div className="dev-name">EISTATECH</div>
+        </div>
       </aside>
 
       <main className="main-content">
@@ -93,9 +102,9 @@ export default function Layout() {
             cursorRadius={500}
             cursorForce={0.1}
             bulgeOnly
-            gradientFrom="#A855F7"
-            gradientTo="#B497CF"
-            glowColor="#120F17"
+            gradientFrom={isDark ? "#A855F7" : "#6366f1"}
+            gradientTo={isDark ? "#B497CF" : "#a855f7"}
+            glowColor={isDark ? "#120F17" : "#f8fafc"}
           />
         </div>
         <div style={{ position: 'relative', zIndex: 1 }}>

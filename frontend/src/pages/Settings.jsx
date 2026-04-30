@@ -1,11 +1,13 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
-import { HiOutlineOfficeBuilding, HiOutlineIdentification, HiOutlineLocationMarker, HiOutlinePhotograph, HiUpload, HiTrash } from 'react-icons/hi';
+import { HiOutlineOfficeBuilding, HiOutlineIdentification, HiOutlineLocationMarker, HiOutlinePhotograph, HiUpload, HiTrash, HiSun, HiMoon } from 'react-icons/hi';
 
 export default function Settings() {
   const { user, updateUser } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const fileInputRef = useRef(null);
   const [form, setForm] = useState({
     businessName: user?.businessName || '',
@@ -64,6 +66,34 @@ export default function Settings() {
       </div>
       <div className="page-body">
         <form onSubmit={handleSave}>
+          {/* Appearance */}
+          <div className="card slide-up" style={{ marginBottom: 24 }}>
+            <div className="settings-section">
+              <h3>{theme === 'dark' ? <HiMoon /> : <HiSun />} Appearance</h3>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+                Choose your preferred theme for the application.
+              </p>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button 
+                  type="button" 
+                  className={`btn ${theme === 'light' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => theme !== 'light' && toggleTheme()}
+                  style={{ flex: 1, maxWidth: 200 }}
+                >
+                  <HiSun /> Light Mode
+                </button>
+                <button 
+                  type="button" 
+                  className={`btn ${theme === 'dark' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => theme !== 'dark' && toggleTheme()}
+                  style={{ flex: 1, maxWidth: 200 }}
+                >
+                  <HiMoon /> Dark Mode
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Shop Logo */}
           <div className="card slide-up" style={{ marginBottom: 24 }}>
             <div className="settings-section">

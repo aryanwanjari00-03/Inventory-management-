@@ -1,8 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Inventory from './pages/Inventory';
@@ -22,11 +22,31 @@ function PublicRoute({ children }) {
   return !user ? children : <Navigate to="/dashboard" />;
 }
 
+function AppContent() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  return (
+    <>
+      <Toaster position="top-right" toastOptions={{
+        style: { 
+          background: isDark ? '#1a1f35' : '#ffffff', 
+          color: isDark ? '#f1f5f9' : '#0f172a', 
+          border: `1px solid ${isDark ? '#2a3150' : '#e2e8f0'}`,
+          boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+        },
+        success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
+        error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } }
+      }} />
+      <AppRoutes />
+    </>
+  );
+}
+
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-      <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Navigate to="/dashboard" />} />
         <Route path="dashboard" element={<Dashboard />} />
@@ -42,13 +62,10 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Toaster position="top-right" toastOptions={{
-        style: { background: '#1a1f35', color: '#f1f5f9', border: '1px solid #2a3150' },
-        success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
-        error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } }
-      }} />
-      <AppRoutes />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
