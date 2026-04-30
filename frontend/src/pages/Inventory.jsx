@@ -11,7 +11,7 @@ export default function Inventory() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [form, setForm] = useState({ itemName: '', litre: '1', unit: 'Litre', quantity: '', unitPrice: '' });
+  const [form, setForm] = useState({ itemName: '', litre: '1', color: '', unit: 'Litre', quantity: '', unitPrice: '' });
 
   useEffect(() => { fetchItems(); }, []);
 
@@ -29,7 +29,7 @@ export default function Inventory() {
   };
 
   const resetForm = () => {
-    setForm({ itemName: '', litre: '1', unit: 'Litre', quantity: '', unitPrice: '' });
+    setForm({ itemName: '', litre: '1', color: '', unit: 'Litre', quantity: '', unitPrice: '' });
     setShowAdd(false);
     setEditItem(null);
   };
@@ -41,6 +41,7 @@ export default function Inventory() {
       await api.post('/inventory', { 
         itemName: form.itemName, 
         litre: form.litre,
+        color: form.color,
         unit: form.unit,
         quantity: Number(form.quantity), 
         unitPrice: Number(form.unitPrice) 
@@ -59,6 +60,7 @@ export default function Inventory() {
         quantity: Number(form.quantity), 
         unitPrice: Number(form.unitPrice),
         litre: form.litre,
+        color: form.color,
         unit: form.unit
       });
       toast.success('Item updated!');
@@ -81,6 +83,7 @@ export default function Inventory() {
     setForm({ 
       itemName: item.itemName, 
       litre: item.litre || '1',
+      color: item.color || '',
       unit: item.unit || 'Litre',
       quantity: String(item.quantity), 
       unitPrice: String(item.unitPrice) 
@@ -151,11 +154,22 @@ export default function Inventory() {
                       style={editItem ? { opacity: 0.6 } : {}}
                     />
                   </div>
+                  {form.unit === 'Litre' && (
+                    <div className="form-group">
+                      <label>Color</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Red / Sky Blue / N/A"
+                        value={form.color}
+                        onChange={e => setForm({ ...form, color: e.target.value })}
+                      />
+                    </div>
+                  )}
                   <div className="form-group">
                     <label>Unit Type</label>
                     <select 
                       value={form.unit} 
-                      onChange={e => setForm({ ...form, unit: e.target.value })}
+                      onChange={e => setForm({ ...form, unit: e.target.value, color: e.target.value === 'Litre' ? form.color : '' })}
                     >
                       <option value="Litre">Litre (L)</option>
                       <option value="KG">KG (kg)</option>
@@ -221,6 +235,7 @@ export default function Inventory() {
                   <tr>
                     <th>#</th>
                     <th>Item Name</th>
+                    <th>Color</th>
                     <th>Size/Unit</th>
                     <th>Total Stock Added</th>
                     <th>Unit Price</th>
@@ -233,6 +248,7 @@ export default function Inventory() {
                     <tr key={item._id}>
                       <td>{idx + 1}</td>
                       <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{item.itemName}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{item.color || '—'}</td>
                       <td>
                         {item.unit === 'Litre' ? `${item.litre} L` : item.unit === 'KG' ? `${item.litre} kg` : `${item.litre} ${item.unit || ''}`}
                       </td>
@@ -272,7 +288,7 @@ export default function Inventory() {
                       <div className={`timeline-dot ${h.action}`}></div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
-                          <span>{h.itemName} ({h.litre}{h.unit === 'Litre' ? 'L' : h.unit === 'KG' ? 'kg' : ` ${h.unit || ''}`})</span>
+                          <span>{h.itemName} {h.color ? `(${h.color}) ` : ''}({h.litre}{h.unit === 'Litre' ? 'L' : h.unit === 'KG' ? 'kg' : ` ${h.unit || ''}`})</span>
                           <span className={`badge ${h.action === 'added' ? 'badge-success' : h.action === 'updated' ? 'badge-warning' : 'badge-danger'}`}>
                             {h.action}
                           </span>

@@ -172,7 +172,7 @@ export default function BillGenerator() {
                       <option value="">Select item...</option>
                       {inventory.map(inv => (
                         <option key={inv._id} value={inv._id}>
-                          {inv.itemName} ({inv.litre}{inv.unit === 'Litre' ? 'L' : inv.unit === 'KG' ? 'kg' : ` ${inv.unit || ''}`}) - Stock: {inv.quantity}
+                          {inv.itemName} {inv.color ? `[${inv.color}] ` : ''}({inv.litre}{inv.unit === 'Litre' ? 'L' : inv.unit === 'KG' ? 'kg' : ` ${inv.unit || ''}`}) - Stock: {inv.quantity}
                         </option>
                       ))}
                     </select>

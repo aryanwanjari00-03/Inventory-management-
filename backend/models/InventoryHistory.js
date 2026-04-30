@@ -14,6 +14,10 @@ const inventoryHistorySchema = new mongoose.Schema({
     type: String,
     default: '1'
   },
+  color: {
+    type: String,
+    default: ''
+  },
   unit: {
     type: String,
     default: 'Litre'

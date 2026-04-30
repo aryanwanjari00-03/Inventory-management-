@@ -13,7 +13,10 @@ export default function History() {
   const [bills, setBills] = useState([]);
   const [invHistory, setInvHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [reportType, setReportType] = useState('monthly'); // 'daily', 'monthly', 'yearly'
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10)); // YYYY-MM-DD
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString()); // YYYY
   const [paymentFilter, setPaymentFilter] = useState('All');
   const [productFilter, setProductFilter] = useState('All');
 
@@ -35,9 +38,17 @@ export default function History() {
   const formatDate = (d) => new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
   // Filtering and Aggregation
-  const filteredInvHistory = invHistory.filter(h => h.date.startsWith(selectedMonth));
+  const getFilterPrefix = () => {
+    if (reportType === 'daily') return selectedDate;
+    if (reportType === 'monthly') return selectedMonth;
+    if (reportType === 'yearly') return selectedYear;
+    return selectedMonth;
+  };
+
+  const filterPrefix = getFilterPrefix();
+  const filteredInvHistory = invHistory.filter(h => h.date.startsWith(filterPrefix));
   
-  let filteredBills = bills.filter(b => b.date.startsWith(selectedMonth));
+  let filteredBills = bills.filter(b => b.date.startsWith(filterPrefix));
   if (paymentFilter !== 'All') {
     filteredBills = filteredBills.filter(b => b.paymentMode === paymentFilter);
   }
@@ -97,7 +108,8 @@ export default function History() {
     doc.setFont('helvetica', 'bold');
     doc.text(user?.businessName || 'Paint Shop', w / 2, 20, { align: 'center' });
     doc.setFontSize(14);
-    doc.text(`Monthly Billing Report - ${selectedMonth}`, w / 2, 30, { align: 'center' });
+    const reportLabel = reportType === 'daily' ? 'Daily' : reportType === 'monthly' ? 'Monthly' : 'Yearly';
+    doc.text(`${reportLabel} Billing Report - ${filterPrefix}`, w / 2, 30, { align: 'center' });
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
@@ -140,7 +152,7 @@ export default function History() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Billing_Report_${selectedMonth}.pdf`;
+    link.download = `Billing_Report_${reportType}_${filterPrefix}.pdf`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -158,13 +170,56 @@ export default function History() {
           <div className="history-tabs">
             <button className="history-tab active">Billing History</button>
           </div>
-          <div className="month-picker">
-            <HiCalendar style={{ color: 'var(--accent)', fontSize: 18 }} />
-            <input 
-              type="month" 
-              value={selectedMonth} 
-              onChange={e => setSelectedMonth(e.target.value)} 
-            />
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div className="report-type-selector" style={{ display: 'flex', background: 'rgba(99,102,241,0.05)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border)' }}>
+              {['daily', 'monthly', 'yearly'].map(type => (
+                <button
+                  key={type}
+                  onClick={() => setReportType(type)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '7px',
+                    border: 'none',
+                    background: reportType === type ? 'var(--gradient-1)' : 'transparent',
+                    color: reportType === type ? 'white' : 'var(--text-secondary)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    textTransform: 'capitalize'
+                  }}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+            <div className="month-picker">
+              <HiCalendar style={{ color: 'var(--accent)', fontSize: 18 }} />
+              {reportType === 'daily' && (
+                <input 
+                  type="date" 
+                  value={selectedDate} 
+                  onChange={e => setSelectedDate(e.target.value)} 
+                />
+              )}
+              {reportType === 'monthly' && (
+                <input 
+                  type="month" 
+                  value={selectedMonth} 
+                  onChange={e => setSelectedMonth(e.target.value)} 
+                />
+              )}
+              {reportType === 'yearly' && (
+                <input 
+                  type="number" 
+                  min="2000" 
+                  max="2100"
+                  value={selectedYear} 
+                  onChange={e => setSelectedYear(e.target.value)}
+                  style={{ width: 80 }}
+                />
+              )}
+            </div>
           </div>
           <button className="btn btn-secondary" onClick={exportToPDF} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <HiDocumentReport /> Export PDF Report
@@ -202,7 +257,7 @@ export default function History() {
                   📄
                 </div>
                 <div className="stat-info">
-                  <span className="stat-label">Monthly Sales</span>
+                  <span className="stat-label">{reportType === 'daily' ? 'Daily' : reportType === 'monthly' ? 'Monthly' : 'Yearly'} Sales</span>
                   <div className="stat-value" style={{ fontSize: 18 }}>₹{filteredBills.reduce((s, b) => s + b.grandTotal, 0).toLocaleString('en-IN')}</div>
                   <span className="stat-sublabel">{filteredBills.length} bills generated</span>
                 </div>
@@ -231,7 +286,7 @@ export default function History() {
 
             <div className="card">
               {filteredBills.length === 0 ? (
-                <div className="empty-state"><div className="empty-state-icon">📄</div><p>No bills found for this month.</p></div>
+                <div className="empty-state"><div className="empty-state-icon">📄</div><p>No bills found for this {reportType === 'daily' ? 'day' : reportType === 'monthly' ? 'month' : 'year'}.</p></div>
               ) : (
                 <div className="table-container">
                   <table>
@@ -259,7 +314,7 @@ export default function History() {
                               {bill.items.map((i, idx) => (
                                 <div key={idx} className="bill-item-mini">
                                   <span className="name">{i.itemName}</span>
-                                  <span className="spec">({i.litre}{i.unit === 'Litre' ? 'L' : i.unit === 'KG' ? 'kg' : ` ${i.unit || ''}`})</span>
+                                  <span className="spec">{i.color ? ` [${i.color}]` : ''} ({i.litre}{i.unit === 'Litre' ? 'L' : i.unit === 'KG' ? 'kg' : ` ${i.unit || ''}`})</span>
                                   <span className="qty">x{i.quantity}</span>
                                 </div>
                               ))}

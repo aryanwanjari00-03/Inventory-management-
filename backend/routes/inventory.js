@@ -25,14 +25,15 @@ router.get('/', auth, async (req, res) => {
 // Add inventory item
 router.post('/', auth, async (req, res) => {
   try {
-    const { itemName, quantity, unitPrice, litre, unit } = req.body;
+    const { itemName, quantity, unitPrice, litre, unit, color } = req.body;
 
     // Check if item already exists for this user with same name and litre
     const existing = await Inventory.findOne({ 
       userId: req.user._id, 
       itemName: { $regex: new RegExp(`^${itemName}$`, 'i') },
       litre: litre || '1',
-      unit: unit || 'Litre'
+      unit: unit || 'Litre',
+      color: color || ''
     });
     
     if (existing) {
@@ -43,6 +44,7 @@ router.post('/', auth, async (req, res) => {
       userId: req.user._id,
       itemName,
       litre: litre || '1',
+      color: color || '',
       unit: unit || 'Litre',
       quantity,
       totalStockAdded: quantity,
@@ -55,6 +57,7 @@ router.post('/', auth, async (req, res) => {
       userId: req.user._id,
       itemName,
       litre: litre || '1',
+      color: color || '',
       unit: unit || 'Litre',
       action: 'added',
       oldQuantity: 0,
@@ -71,7 +74,7 @@ router.post('/', auth, async (req, res) => {
 // Update inventory item
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { quantity, unitPrice, litre, unit } = req.body;
+    const { quantity, unitPrice, litre, unit, color } = req.body;
     const item = await Inventory.findOne({ _id: req.params.id, userId: req.user._id });
 
     if (!item) {
@@ -85,6 +88,7 @@ router.put('/:id', auth, async (req, res) => {
     if (unitPrice !== undefined) item.unitPrice = unitPrice;
     if (litre !== undefined) item.litre = litre;
     if (unit !== undefined) item.unit = unit;
+    if (color !== undefined) item.color = color;
 
     // If quantity increased, it means more stock was added
     if (qtyDiff > 0) {
@@ -98,6 +102,7 @@ router.put('/:id', auth, async (req, res) => {
       userId: req.user._id,
       itemName: item.itemName,
       litre: item.litre,
+      color: item.color,
       unit: item.unit,
       action: 'updated',
       oldQuantity,
@@ -125,6 +130,7 @@ router.delete('/:id', auth, async (req, res) => {
       userId: req.user._id,
       itemName: item.itemName,
       litre: item.litre,
+      color: item.color,
       unit: item.unit,
       action: 'deleted',
       oldQuantity: item.quantity,

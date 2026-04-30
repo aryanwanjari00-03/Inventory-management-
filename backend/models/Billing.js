@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const billItemSchema = new mongoose.Schema({
   itemName: { type: String, required: true },
   litre: { type: String },
+  color: { type: String, default: '' },
   unit: { type: String },
   quantity: { type: Number, required: true },
   unitPrice: { type: Number, required: true },
