@@ -85,8 +85,8 @@ export default function Layout() {
         </div>
 
         <div className="sidebar-branding">
-          <div className="dev-label">Developed By <div className="dev-name">EISTATECH</div></div>
-          {/* <div className="dev-name">EISTATECH</div> */}
+          <div className="dev-label">Developed By </div>
+          <div className="dev-name">EISTATECH</div>
         </div>
       </aside>
 

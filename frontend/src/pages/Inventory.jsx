@@ -5,7 +5,10 @@ import { HiPlus, HiPencil, HiTrash, HiX } from 'react-icons/hi';
 
 export default function Inventory() {
   const [items, setItems] = useState([]);
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('list'); // 'list' or 'history'
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [form, setForm] = useState({ itemName: '', litre: '1', unit: 'Litre', quantity: '', unitPrice: '' });
@@ -14,8 +17,13 @@ export default function Inventory() {
 
   const fetchItems = async () => {
     try {
-      const res = await api.get('/inventory');
-      setItems(res.data);
+      setLoading(true);
+      const [iRes, hRes] = await Promise.all([
+        api.get('/inventory'),
+        api.get('/inventory/history')
+      ]);
+      setItems(iRes.data);
+      setHistory(hRes.data);
     } catch { toast.error('Failed to load inventory'); }
     finally { setLoading(false); }
   };
@@ -82,6 +90,19 @@ export default function Inventory() {
 
   const totalCost = form.quantity && form.unitPrice ? (Number(form.quantity) * Number(form.unitPrice)) : 0;
 
+  const formatDate = (d) => new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  const filteredHistory = history.filter(h => h.date.startsWith(selectedMonth));
+  
+  const stats = filteredHistory.reduce((acc, h) => {
+    const diff = (h.newQuantity || 0) - (h.oldQuantity || 0);
+    if (diff > 0) {
+      acc.totalIn += diff;
+      acc.totalInValue += (diff * (h.unitPrice || 0));
+    }
+    return acc;
+  }, { totalIn: 0, totalInValue: 0 });
+
   return (
     <div className="fade-in">
       <div className="page-header">
@@ -89,11 +110,26 @@ export default function Inventory() {
           <h1>Inventory Management</h1>
           <p>Manage paints, brushes, and other supplies</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { resetForm(); setShowAdd(true); }}>
-          <HiPlus /> Add Item
-        </button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          {tab === 'history' && (
+            <input 
+              type="month" 
+              className="month-picker"
+              value={selectedMonth} 
+              onChange={e => setSelectedMonth(e.target.value)}
+              style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, padding: '0 12px' }}
+            />
+          )}
+          <button className="btn btn-primary" onClick={() => { resetForm(); setShowAdd(true); }}>
+            <HiPlus /> Add Item
+          </button>
+        </div>
       </div>
       <div className="page-body">
+        <div className="history-tabs" style={{ marginBottom: 24, justifyContent: 'flex-start' }}>
+          <button className={`history-tab ${tab === 'list' ? 'active' : ''}`} onClick={() => setTab('list')}>Stock Records</button>
+          <button className={`history-tab ${tab === 'history' ? 'active' : ''}`} onClick={() => setTab('history')}>Purchase History</button>
+        </div>
         {/* Add/Edit Modal */}
         {(showAdd || editItem) && (
           <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) resetForm(); }}>
@@ -177,26 +213,18 @@ export default function Inventory() {
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: 60 }}><div className="spinner" style={{ margin: '0 auto' }}></div></div>
-        ) : items.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">📦</div>
-            <p>No items yet. Click "Add Item" to get started.</p>
-          </div>
-        ) : (
+        ) : tab === 'list' ? (
           <div className="card slide-up">
             <div className="table-container">
               <table>
-
                 <thead>
                   <tr>
                     <th>#</th>
                     <th>Item Name</th>
                     <th>Size/Unit</th>
-                    <th>Qty</th>
+                    <th>Total Stock Added</th>
                     <th>Unit Price</th>
-                    <th>Total</th>
-                    <th>Status</th>
-                    <th>Last Updated</th>
+                    <th>Total Investment</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -208,15 +236,9 @@ export default function Inventory() {
                       <td>
                         {item.unit === 'Litre' ? `${item.litre} L` : item.unit === 'KG' ? `${item.litre} kg` : `${item.litre} ${item.unit || ''}`}
                       </td>
-                      <td>{item.quantity}</td>
+                      <td style={{ fontWeight: 600 }}>{item.totalStockAdded || item.quantity}</td>
                       <td>₹{item.unitPrice.toLocaleString('en-IN')}</td>
-                      <td style={{ fontWeight: 600 }}>₹{item.totalPrice.toLocaleString('en-IN')}</td>
-                      <td>
-                        <span className={`badge ${item.quantity < 5 ? 'badge-danger' : item.quantity < 10 ? 'badge-warning' : 'badge-success'}`}>
-                          {item.quantity < 5 ? 'Critical' : item.quantity < 10 ? 'Low' : 'In Stock'}
-                        </span>
-                      </td>
-                      <td>{new Date(item.lastUpdated).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+                      <td style={{ fontWeight: 600 }}>₹{((item.totalStockAdded || item.quantity) * item.unitPrice).toLocaleString('en-IN')}</td>
                       <td>
                         <div style={{ display: 'flex', gap: 6 }}>
                           <button className="btn-icon" onClick={() => openEdit(item)} title="Edit"><HiPencil /></button>
@@ -227,6 +249,51 @@ export default function Inventory() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        ) : (
+          <div className="slide-up">
+            <div className="stats-grid" style={{ marginBottom: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+              <div className="stat-card">
+                <div className="stat-info">
+                  <span className="stat-label">Total Stock Added ({selectedMonth})</span>
+                  <div className="stat-value">₹{stats.totalInValue.toLocaleString('en-IN')}</div>
+                  <span className="stat-sublabel">{stats.totalIn} units brought in</span>
+                </div>
+              </div>
+            </div>
+            <div className="card">
+              {filteredHistory.length === 0 ? (
+                <div className="empty-state"><p>No inventory changes for this month.</p></div>
+              ) : (
+                <div>
+                  {filteredHistory.map(h => (
+                    <div key={h._id} className="timeline-item">
+                      <div className={`timeline-dot ${h.action}`}></div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                          <span>{h.itemName} ({h.litre}{h.unit === 'Litre' ? 'L' : h.unit === 'KG' ? 'kg' : ` ${h.unit || ''}`})</span>
+                          <span className={`badge ${h.action === 'added' ? 'badge-success' : h.action === 'updated' ? 'badge-warning' : 'badge-danger'}`}>
+                            {h.action}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                          {h.action === 'added' && `Initial stock: ${h.newQuantity} units at ₹${h.unitPrice}/unit`}
+                          {h.action === 'updated' && (
+                            <>
+                              Quantity change: <b>{h.oldQuantity} → {h.newQuantity}</b> 
+                              {h.newQuantity > h.oldQuantity ? ' (Restocked)' : ' (Deducted)'}
+                              {h.unitPrice > 0 && ` | Price: ₹${h.unitPrice}/unit`}
+                            </>
+                          )}
+                          {h.action === 'deleted' && `Removed entirely (was ${h.oldQuantity} units)`}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{formatDate(h.date)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -25,6 +25,11 @@ const billingSchema = new mongoose.Schema({
     required: [true, 'Mobile number is required'],
     trim: true
   },
+  customerAddress: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   items: [billItemSchema],
   totalAmount: {
     type: Number,
@@ -45,6 +50,11 @@ const billingSchema = new mongoose.Schema({
   date: {
     type: Date,
     default: Date.now
+  },
+  paymentMode: {
+    type: String,
+    enum: ['Cash', 'Online'],
+    default: 'Cash'
   }
 }, { timestamps: true });
 

@@ -29,7 +29,7 @@ router.get('/recent', auth, async (req, res) => {
 // Create a bill
 router.post('/', auth, async (req, res) => {
   try {
-    const { customerName, mobileNumber, items, gstApplied } = req.body;
+    const { customerName, mobileNumber, customerAddress, items, gstApplied, paymentMode } = req.body;
 
     // Calculate totals
     let totalAmount = 0;
@@ -83,11 +83,13 @@ router.post('/', auth, async (req, res) => {
       userId: req.user._id,
       customerName,
       mobileNumber,
+      customerAddress,
       items: billItems,
       totalAmount,
       gstApplied,
       gstAmount,
       grandTotal,
+      paymentMode: paymentMode || 'Cash',
       date: new Date()
     });
 

@@ -9,7 +9,14 @@ const router = express.Router();
 router.get('/', auth, async (req, res) => {
   try {
     const items = await Inventory.find({ userId: req.user._id }).sort({ lastUpdated: -1 });
-    res.json(items);
+    const fixedItems = items.map(item => {
+      const doc = item.toObject();
+      if (doc.totalStockAdded === undefined || doc.totalStockAdded === 0) {
+        doc.totalStockAdded = doc.quantity;
+      }
+      return doc;
+    });
+    res.json(fixedItems);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -38,6 +45,7 @@ router.post('/', auth, async (req, res) => {
       litre: litre || '1',
       unit: unit || 'Litre',
       quantity,
+      totalStockAdded: quantity,
       unitPrice
     });
     await item.save();
@@ -71,11 +79,18 @@ router.put('/:id', auth, async (req, res) => {
     }
 
     const oldQuantity = item.quantity;
+    const qtyDiff = (quantity !== undefined) ? (Number(quantity) - oldQuantity) : 0;
 
     if (quantity !== undefined) item.quantity = quantity;
     if (unitPrice !== undefined) item.unitPrice = unitPrice;
     if (litre !== undefined) item.litre = litre;
     if (unit !== undefined) item.unit = unit;
+
+    // If quantity increased, it means more stock was added
+    if (qtyDiff > 0) {
+      item.totalStockAdded = (item.totalStockAdded || oldQuantity) + qtyDiff;
+    }
+
     await item.save();
 
     // Log history
