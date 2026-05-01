@@ -8,7 +8,9 @@ const router = express.Router();
 // Get all inventory items
 router.get('/', auth, async (req, res) => {
   try {
-    const items = await Inventory.find({ userId: req.user._id }).sort({ lastUpdated: -1 });
+    const items = await Inventory.find({ userId: req.user._id })
+      .collation({ locale: 'en', strength: 2 }) // For case-insensitive sorting
+      .sort({ itemName: 1, litre: 1 });
     const fixedItems = items.map(item => {
       const doc = item.toObject();
       if (doc.totalStockAdded === undefined || doc.totalStockAdded === 0) {

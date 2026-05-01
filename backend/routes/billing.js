@@ -36,6 +36,7 @@ router.post('/', auth, async (req, res) => {
     const billItems = [];
 
     for (const item of items) {
+      console.log('Received item from frontend:', item);
       const inventoryItem = await Inventory.findOne({ _id: item.inventoryId, userId: req.user._id });
       if (!inventoryItem) {
         return res.status(404).json({ message: `Item not found: ${item.itemName}` });
@@ -50,7 +51,7 @@ router.post('/', auth, async (req, res) => {
       billItems.push({
         itemName: inventoryItem.itemName,
         litre: inventoryItem.litre,
-        color: inventoryItem.color || '',
+        color: item.colorCode !== undefined ? item.colorCode : (inventoryItem.color || ''),
         unit: inventoryItem.unit,
         quantity: item.quantity,
         unitPrice: inventoryItem.unitPrice,

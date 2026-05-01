@@ -188,7 +188,11 @@ export default function Inventory() {
                         value={form.litre} 
                         onChange={e => setForm({ ...form, litre: e.target.value })}
                       >
-                        <option value="0.5">0.5 L</option>
+                        <option value="50ml">50 ml</option>
+                        <option value="100ml">100 ml</option>
+                        <option value="200ml">200 ml</option>
+                        <option value="250ml">250 ml</option>
+                        <option value="500ml">500 ml</option>
                         <option value="1">1 L</option>
                         <option value="4">4 L</option>
                         <option value="10">10 L</option>
@@ -250,7 +254,7 @@ export default function Inventory() {
                       <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{item.itemName}</td>
                       <td style={{ color: 'var(--text-secondary)' }}>{item.color || '—'}</td>
                       <td>
-                        {item.unit === 'Litre' ? `${item.litre} L` : item.unit === 'KG' ? `${item.litre} kg` : `${item.litre} ${item.unit || ''}`}
+                        {item.unit === 'Litre' ? (item.litre.includes('ml') ? item.litre : `${item.litre} L`) : item.unit === 'KG' ? `${item.litre} kg` : `${item.litre} ${item.unit || ''}`}
                       </td>
                       <td style={{ fontWeight: 600 }}>{item.totalStockAdded || item.quantity}</td>
                       <td>₹{item.unitPrice.toLocaleString('en-IN')}</td>
@@ -288,7 +292,7 @@ export default function Inventory() {
                       <div className={`timeline-dot ${h.action}`}></div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
-                          <span>{h.itemName} {h.color ? `(${h.color}) ` : ''}({h.litre}{h.unit === 'Litre' ? 'L' : h.unit === 'KG' ? 'kg' : ` ${h.unit || ''}`})</span>
+                          <span>{h.itemName} {h.color ? `(${h.color}) ` : ''}({h.unit === 'Litre' ? (h.litre.includes('ml') ? h.litre : `${h.litre} L`) : h.unit === 'KG' ? `${h.litre} kg` : `${h.litre} ${h.unit || ''}`})</span>
                           <span className={`badge ${h.action === 'added' ? 'badge-success' : h.action === 'updated' ? 'badge-warning' : 'badge-danger'}`}>
                             {h.action}
                           </span>

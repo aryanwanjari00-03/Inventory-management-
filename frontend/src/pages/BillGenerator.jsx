@@ -71,7 +71,7 @@ export default function BillGenerator() {
   const [customerName, setCustomerName] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
-  const [billItems, setBillItems] = useState([{ inventoryId: '', quantity: 1 }]);
+  const [billItems, setBillItems] = useState([{ inventoryId: '', quantity: 1, colorCode: '' }]);
   const [paymentMode, setPaymentMode] = useState('Cash');
   const [generating, setGenerating] = useState(false);
   const [recentSearch, setRecentSearch] = useState('');
@@ -84,7 +84,7 @@ export default function BillGenerator() {
 
   const gstApplied = !!(user?.gstNumber);
 
-  const addRow = () => setBillItems([...billItems, { inventoryId: '', quantity: 1 }]);
+  const addRow = () => setBillItems([...billItems, { inventoryId: '', quantity: 1, colorCode: '' }]);
 
   const removeRow = (i) => {
     if (billItems.length <= 1) return;
@@ -144,7 +144,7 @@ export default function BillGenerator() {
       setCustomerName('');
       setMobileNumber('');
       setCustomerAddress('');
-      setBillItems([{ inventoryId: '', quantity: 1 }]);
+      setBillItems([{ inventoryId: '', quantity: 1, colorCode: '' }]);
 
       // Refresh
       api.get('/billing/recent').then(r => setRecentBills(r.data));
@@ -233,9 +233,21 @@ export default function BillGenerator() {
                       placeholder="Search or select item..."
                       options={inventory.map(inv => ({
                         value: inv._id,
-                        label: `${inv.itemName} ${inv.color ? `[${inv.color}] ` : ''}(${inv.litre}${inv.unit === 'Litre' ? 'L' : inv.unit === 'KG' ? 'kg' : ` ${inv.unit || ''}`}) - Stock: ${inv.quantity}`
+                        label: `${inv.itemName} ${inv.color ? `[${inv.color}] ` : ''}(${inv.unit === 'Litre' ? (inv.litre.includes('ml') ? inv.litre : `${inv.litre} L`) : inv.unit === 'KG' ? `${inv.litre} kg` : `${inv.litre} ${inv.unit || ''}`}) - Stock: ${inv.quantity}`
                       }))}
                     />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    {item?.unit === 'Litre' ? (
+                      <input 
+                        type="text" 
+                        value={bi.colorCode || ''} 
+                        onChange={e => updateRow(i, 'colorCode', e.target.value)} 
+                        placeholder="Color Code" 
+                      />
+                    ) : (
+                      <input type="text" value="-" disabled style={{ opacity: 0.5, textAlign: 'center' }} />
+                    )}
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <input type="number" min="1" max={item?.quantity || 999} value={bi.quantity} onChange={e => updateRow(i, 'quantity', Number(e.target.value))} placeholder="Qty" />

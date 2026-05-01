@@ -394,7 +394,7 @@ tr:hover td { background: rgba(99,102,241,0.04); }
 /* ========== BILL GENERATOR ========== */
 .bill-form-section { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
 .bill-items-section { margin-bottom: 24px; }
-.bill-item-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 12px; align-items: end; margin-bottom: 12px; }
+.bill-item-row { display: grid; grid-template-columns: 2.5fr 1fr 0.8fr 1fr 1fr auto; gap: 12px; align-items: end; margin-bottom: 12px; }
 .bill-summary {
   background: rgba(99,102,241,0.04);
   border: 1px solid rgba(99,102,241,0.1); border-radius: var(--radius-md); padding: 20px;

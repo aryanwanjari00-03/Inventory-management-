@@ -79,8 +79,8 @@ export const generatePDF = (bill, user) => {
     head: [['#', 'Color/Code', 'Item', 'Qty', 'Price', 'Total']],
     body: bill.items.map((item, i) => [
       i + 1,
-      item.unit === 'Litre' ? '[        ]' : '-',
-      `${item.itemName}${item.litre ? ` (${item.litre}${item.unit === 'Litre' ? 'L' : item.unit === 'KG' ? 'kg' : ` ${item.unit || ''}`})` : ''}`,
+      item.unit === 'Litre' ? (item.color || '[        ]') : '-',
+      `${item.itemName}${item.litre ? ` (${item.unit === 'Litre' ? (item.litre.includes('ml') ? item.litre : `${item.litre} L`) : item.unit === 'KG' ? `${item.litre} kg` : `${item.litre} ${item.unit || ''}`})` : ''}`,
       item.quantity,
       item.unitPrice.toLocaleString('en-IN'),
       item.price.toLocaleString('en-IN')
