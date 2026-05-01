@@ -24,7 +24,7 @@ const inventoryHistorySchema = new mongoose.Schema({
   },
   action: {
     type: String,
-    enum: ['added', 'updated', 'deleted'],
+    enum: ['added', 'updated', 'deleted', 'billed'],
     required: true
   },
   oldQuantity: {

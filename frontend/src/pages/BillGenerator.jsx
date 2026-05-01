@@ -1,9 +1,68 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { generatePDF } from '../utils/billingUtils';
 import { HiPlus, HiTrash, HiDownload, HiPrinter } from 'react-icons/hi';
+
+const SearchableSelect = ({ value, onChange, options, placeholder }) => {
+  const [search, setSearch] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(o => o.value === value);
+
+  return (
+    <div ref={wrapperRef} style={{ position: 'relative', width: '100%', marginBottom: 0 }}>
+      <input
+        type="text"
+        placeholder={selectedOption ? selectedOption.label : placeholder}
+        value={isOpen ? search : (selectedOption ? selectedOption.label : '')}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setIsOpen(true);
+          onChange('');
+        }}
+        onFocus={() => { setIsOpen(true); setSearch(''); }}
+        style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text-primary)', padding: '10px 14px', borderRadius: '8px', fontSize: '14px', transition: 'border-color 0.2s ease', outline: 'none' }}
+      />
+      {isOpen && (
+        <ul style={{
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, 
+          background: 'var(--bg-card)', border: '1px solid var(--border)', 
+          borderRadius: '8px', maxHeight: '200px', overflowY: 'auto', 
+          zIndex: 50, listStyle: 'none', padding: 0, margin: 0,
+          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)'
+        }}>
+          {options.filter(o => o.label.toLowerCase().includes(search.toLowerCase())).map(o => (
+            <li 
+              key={o.value} 
+              onMouseDown={(e) => { e.preventDefault(); onChange(o.value); setIsOpen(false); setSearch(''); }}
+              style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid var(--border)', fontSize: '13px', color: 'var(--text-primary)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.color = '#fff'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+            >
+              {o.label}
+            </li>
+          ))}
+          {options.filter(o => o.label.toLowerCase().includes(search.toLowerCase())).length === 0 && (
+            <li style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: '13px' }}>No items found</li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+};
 
 export default function BillGenerator() {
   const { user } = useAuth();
@@ -168,14 +227,15 @@ export default function BillGenerator() {
               return (
                 <div key={i} className="bill-item-row">
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <select value={bi.inventoryId} onChange={e => updateRow(i, 'inventoryId', e.target.value)}>
-                      <option value="">Select item...</option>
-                      {inventory.map(inv => (
-                        <option key={inv._id} value={inv._id}>
-                          {inv.itemName} {inv.color ? `[${inv.color}] ` : ''}({inv.litre}{inv.unit === 'Litre' ? 'L' : inv.unit === 'KG' ? 'kg' : ` ${inv.unit || ''}`}) - Stock: {inv.quantity}
-                        </option>
-                      ))}
-                    </select>
+                    <SearchableSelect 
+                      value={bi.inventoryId}
+                      onChange={(val) => updateRow(i, 'inventoryId', val)}
+                      placeholder="Search or select item..."
+                      options={inventory.map(inv => ({
+                        value: inv._id,
+                        label: `${inv.itemName} ${inv.color ? `[${inv.color}] ` : ''}(${inv.litre}${inv.unit === 'Litre' ? 'L' : inv.unit === 'KG' ? 'kg' : ` ${inv.unit || ''}`}) - Stock: ${inv.quantity}`
+                      }))}
+                    />
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <input type="number" min="1" max={item?.quantity || 999} value={bi.quantity} onChange={e => updateRow(i, 'quantity', Number(e.target.value))} placeholder="Qty" />

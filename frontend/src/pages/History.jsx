@@ -14,9 +14,23 @@ export default function History() {
   const [invHistory, setInvHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reportType, setReportType] = useState('monthly'); // 'daily', 'monthly', 'yearly'
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10)); // YYYY-MM-DD
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString()); // YYYY
+  // Helper to get local date strings
+  const getLocalStrings = (dateObj) => {
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return {
+      date: `${year}-${month}-${day}`,
+      month: `${year}-${month}`,
+      year: `${year}`
+    };
+  };
+
+  const todayLocal = getLocalStrings(new Date());
+
+  const [selectedDate, setSelectedDate] = useState(todayLocal.date); // YYYY-MM-DD
+  const [selectedMonth, setSelectedMonth] = useState(todayLocal.month); // YYYY-MM
+  const [selectedYear, setSelectedYear] = useState(todayLocal.year); // YYYY
   const [paymentFilter, setPaymentFilter] = useState('All');
   const [productFilter, setProductFilter] = useState('All');
 
@@ -46,9 +60,22 @@ export default function History() {
   };
 
   const filterPrefix = getFilterPrefix();
-  const filteredInvHistory = invHistory.filter(h => h.date.startsWith(filterPrefix));
   
-  let filteredBills = bills.filter(b => b.date.startsWith(filterPrefix));
+  const filteredInvHistory = invHistory.filter(h => {
+    const hLocal = getLocalStrings(new Date(h.date));
+    if (reportType === 'daily') return hLocal.date === filterPrefix;
+    if (reportType === 'monthly') return hLocal.month === filterPrefix;
+    if (reportType === 'yearly') return hLocal.year === filterPrefix;
+    return hLocal.month === filterPrefix;
+  });
+  
+  let filteredBills = bills.filter(b => {
+    const bLocal = getLocalStrings(new Date(b.date));
+    if (reportType === 'daily') return bLocal.date === filterPrefix;
+    if (reportType === 'monthly') return bLocal.month === filterPrefix;
+    if (reportType === 'yearly') return bLocal.year === filterPrefix;
+    return bLocal.month === filterPrefix;
+  });
   if (paymentFilter !== 'All') {
     filteredBills = filteredBills.filter(b => b.paymentMode === paymentFilter);
   }
@@ -69,7 +96,7 @@ export default function History() {
     if (diff > 0) {
       acc.totalIn += diff;
       acc.totalInValue += value;
-    } else if (diff < 0) {
+    } else if (diff < 0 && h.action !== 'deleted') {
       acc.totalOut += Math.abs(diff);
       acc.totalOutValue += value;
     }

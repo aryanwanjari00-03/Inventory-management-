@@ -71,7 +71,7 @@ router.post('/', auth, async (req, res) => {
         litre: inventoryItem.litre,
         color: inventoryItem.color,
         unit: inventoryItem.unit,
-        action: 'updated',
+        action: 'billed',
         oldQuantity: oldQuantity,
         newQuantity: inventoryItem.quantity,
         unitPrice: inventoryItem.unitPrice

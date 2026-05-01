@@ -18,7 +18,7 @@ export const numberToWords = (num) => {
 };
 
 export const generatePDF = (bill, user) => {
-  const doc = new jsPDF('p', 'mm', 'a5');
+  const doc = new jsPDF('p', 'mm', 'a4');
   const w = doc.internal.pageSize.getWidth();
 
   // Header - Black & White
@@ -68,13 +68,19 @@ export const generatePDF = (bill, user) => {
   doc.text(`Bill #: ${bill._id.slice(-8).toUpperCase()}`, w - 10, 60, { align: 'right' });
   doc.setFont('helvetica', 'normal');
 
+  // Draw line before table
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.5);
+  doc.line(10, paymentY + 4, w - 10, paymentY + 4);
+
   autoTable(doc, {
     startY: paymentY + 8,
     margin: { left: 10, right: 10 },
-    head: [['#', 'Item', 'Qty', 'Price', 'Total']],
+    head: [['#', 'Color/Code', 'Item', 'Qty', 'Price', 'Total']],
     body: bill.items.map((item, i) => [
       i + 1,
-      `${item.itemName} ${item.color ? `[${item.color}] ` : ''}${item.litre ? `(${item.litre}${item.unit === 'Litre' ? 'L' : item.unit === 'KG' ? 'kg' : ` ${item.unit || ''}`})` : ''}`,
+      item.unit === 'Litre' ? '[        ]' : '-',
+      `${item.itemName}${item.litre ? ` (${item.litre}${item.unit === 'Litre' ? 'L' : item.unit === 'KG' ? 'kg' : ` ${item.unit || ''}`})` : ''}`,
       item.quantity,
       item.unitPrice.toLocaleString('en-IN'),
       item.price.toLocaleString('en-IN')
@@ -112,13 +118,20 @@ export const generatePDF = (bill, user) => {
   doc.text('Customer Signature', 10, sigY + 4);
   doc.text('Authorized Signatory', w - 10, sigY + 4, { align: 'right' });
 
-  const footerY = doc.internal.pageSize.getHeight() - 15;
-  doc.line(10, footerY, w - 10, footerY);
+  const footerY = doc.internal.pageSize.getHeight() - 25;
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(80, 80, 80);
   doc.text(`Owner: ${user?.ownerName || ''} | GST: ${user?.gstNumber || 'N/A'}`, w / 2, footerY + 6, { align: 'center' });
   doc.text('Thank you for your business!', w / 2, footerY + 10, { align: 'center' });
+
+  const pageCount = doc.internal.getNumberOfPages();
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.5);
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.rect(5, 5, w - 10, doc.internal.pageSize.getHeight() - 10);
+  }
 
   return doc;
 };

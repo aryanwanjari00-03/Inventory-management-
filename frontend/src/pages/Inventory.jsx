@@ -197,7 +197,7 @@ export default function Inventory() {
                     ) : (
                       <input 
                         type="text" 
-                        placeholder={form.unit === 'KG' ? 'e.g. 5' : 'e.g. Standard'} 
+                        placeholder={form.unit === 'KG' ? 'e.g. 5' : form.unit === 'Pieces' ? 'e.g. 50mm, 2inch' : 'e.g. Standard'} 
                         value={form.litre} 
                         onChange={e => setForm({ ...form, litre: e.target.value })} 
                       />
