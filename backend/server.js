@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 const dns = require('dns');
+const https = require('https');
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 
@@ -36,6 +37,18 @@ mongoose.connect(process.env.MONGO_URI)
     console.log('✅ Connected to MongoDB');
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
+      
+      // Keep Alive Logic for Render
+      if (process.env.RENDER_URL) {
+        console.log(`📡 Keep-alive active for: ${process.env.RENDER_URL}`);
+        setInterval(() => {
+          https.get(`${process.env.RENDER_URL}/api/health`, (res) => {
+            console.log(`Pinged health check: ${res.statusCode}`);
+          }).on('error', (err) => {
+            console.error('Keep-alive ping failed:', err.message);
+          });
+        }, 14 * 60 * 1000); // 14 minutes
+      }
     });
   })
   .catch((err) => {
